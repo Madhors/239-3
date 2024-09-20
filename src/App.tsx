@@ -3,13 +3,13 @@ import { Amplify } from 'aws-amplify';
 import '@aws-amplify/ui-react/styles.css';
 import outputs from "../amplify_outputs.json";
 import { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Switch, Route, Redirect } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
 Amplify.configure(outputs);
 
 export default function App() {
   const { authStatus } = useAuthenticator(context => [context.authStatus]);
-  const [initialAuthStatus, setInitialAuthStatus] = useState(null);
+  const [initialAuthStatus, setInitialAuthStatus] = useState<AuthStatus | null>(null);
 
   useEffect(() => {
     setInitialAuthStatus(authStatus);
@@ -25,43 +25,33 @@ export default function App() {
         {authStatus !== 'authenticated' ? (
           <Authenticator />
         ) : (
-          <Switch>
-            <Route exact path="/">
-              <Home initialAuthStatus={initialAuthStatus} />
-            </Route>
-            <Route path="/1">
-              <ProtectedRoute>
-                <Page1 />
-              </ProtectedRoute>
-            </Route>
-            <Route path="/2">
-              <ProtectedRoute>
-                <Page2 />
-              </ProtectedRoute>
-            </Route>
-            <Route path="/3">
-              <ProtectedRoute>
-                <Page3 />
-              </ProtectedRoute>
-            </Route>
-          </Switch>
+          <Routes>
+            <Route path="/" element={<Home initialAuthStatus={initialAuthStatus} />} />
+            <Route path="/1" element={<ProtectedRoute><Page1 /></ProtectedRoute>} />
+            <Route path="/2" element={<ProtectedRoute><Page2 /></ProtectedRoute>} />
+            <Route path="/3" element={<ProtectedRoute><Page3 /></ProtectedRoute>} />
+          </Routes>
         )}
       </div>
     </Router>
   );
 }
 
-const ProtectedRoute = ({ children }) => {
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { authStatus } = useAuthenticator(context => [context.authStatus]);
 
   if (authStatus !== 'authenticated') {
-    return <Redirect to="/" />;
+    return <Navigate to="/" replace />;
   }
 
-  return children;
+  return <>{children}</>;
 };
 
-const Home = ({ initialAuthStatus }) => {
+type HomeProps = {
+  initialAuthStatus: AuthStatus | null;
+};
+
+const Home: React.FC<HomeProps> = ({ initialAuthStatus }) => {
   const { signOut } = useAuthenticator(context => [context.user, context.signOut]);
 
   return (
