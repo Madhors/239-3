@@ -1,40 +1,87 @@
-import { useEffect, useState } from "react";
-import type { Schema } from "../amplify/data/resource";
-import { generateClient } from "aws-amplify/data";
+import { Authenticator, useAuthenticator } from '@aws-amplify/ui-react';
+import { Amplify } from 'aws-amplify';
+import '@aws-amplify/ui-react/styles.css';
+import outputs from "../amplify_outputs.json";
+import { useEffect, useState } from 'react';
+import { BrowserRouter as Router, Switch, Route, Redirect } from 'react-router-dom';
 
-const client = generateClient<Schema>();
+Amplify.configure(outputs);
 
-function App() {
-  const [todos, setTodos] = useState<Array<Schema["Todo"]["type"]>>([]);
+export default function App() {
+  const { authStatus } = useAuthenticator(context => [context.authStatus]);
+  const [initialAuthStatus, setInitialAuthStatus] = useState(null);
 
   useEffect(() => {
-    client.models.Todo.observeQuery().subscribe({
-      next: (data) => setTodos([...data.items]),
-    });
-  }, []);
-
-  function createTodo() {
-    client.models.Todo.create({ content: window.prompt("Todo content") });
-  }
+    setInitialAuthStatus(authStatus);
+    console.log('Initial authStatus:', authStatus);
+  }, [authStatus]);
 
   return (
-    <main>
-      <h1>My todos</h1>
-      <button onClick={createTodo}>+ new</button>
-      <ul>
-        {todos.map((todo) => (
-          <li key={todo.id}>{todo.content}</li>
-        ))}
-      </ul>
+    <Router>
       <div>
-        🥳 App successfully hosted. Try creating a new todo.
-        <br />
-        <a href="https://docs.amplify.aws/react/start/quickstart/#make-frontend-updates">
-          Review next step of this tutorial.
-        </a>
+        <p>Initial Authentication Status: {initialAuthStatus}</p>
+        <p>Authentication Status: {authStatus}</p>
+        {authStatus === 'configuring' && 'Loading...'}
+        {authStatus !== 'authenticated' ? (
+          <Authenticator />
+        ) : (
+          <Switch>
+            <Route exact path="/">
+              <Home initialAuthStatus={initialAuthStatus} />
+            </Route>
+            <Route path="/1">
+              <ProtectedRoute>
+                <Page1 />
+              </ProtectedRoute>
+            </Route>
+            <Route path="/2">
+              <ProtectedRoute>
+                <Page2 />
+              </ProtectedRoute>
+            </Route>
+            <Route path="/3">
+              <ProtectedRoute>
+                <Page3 />
+              </ProtectedRoute>
+            </Route>
+          </Switch>
+        )}
       </div>
-    </main>
+    </Router>
   );
 }
 
-export default App;
+const ProtectedRoute = ({ children }) => {
+  const { authStatus } = useAuthenticator(context => [context.authStatus]);
+
+  if (authStatus !== 'authenticated') {
+    return <Redirect to="/" />;
+  }
+
+  return children;
+};
+
+const Home = ({ initialAuthStatus }) => {
+  const { signOut } = useAuthenticator(context => [context.user, context.signOut]);
+
+  return (
+    <div>
+      <h1>Welcome to the Home page!</h1>
+      <p>Initial Authentication Status: {initialAuthStatus}</p>
+      {/* Add your home page content here */}
+      <button onClick={signOut}>Sign Out</button>
+    </div>
+  );
+};
+
+const Page1 = () => {
+  return <h1>Page 1</h1>;
+};
+
+const Page2 = () => {
+  return <h1>Page 2</h1>;
+};
+
+const Page3 = () => {
+  return <h1>Page 3</h1>;
+};
