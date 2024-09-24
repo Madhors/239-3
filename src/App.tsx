@@ -4,6 +4,7 @@ import '@aws-amplify/ui-react/styles.css';
 import outputs from "../amplify_outputs.json";
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
+import React from 'react';
 
 Amplify.configure(outputs);
 
@@ -29,7 +30,7 @@ export default function App() {
   );
 }
 
-const ProtectedPage = ({ component: Component }) => {
+const ProtectedPage = ({ component: Component }: { component: React.ComponentType }) => {
   const { authStatus, signOut } = useAuthenticator(context => [context.authStatus, context.signOut]);
 
   console.log('ProtectedPage authStatus:', authStatus);
@@ -95,7 +96,7 @@ const Home = () => {
   );
 };
 
-const Page1 = () => {
+const Page1: React.FC = () => {
   return (
     <div>
       <h1>Page 1</h1>
@@ -110,7 +111,7 @@ const Page1 = () => {
   );
 };
 
-const Page2 = () => {
+const Page2: React.FC = () => {
   return (
     <div>
       <h1>Page 2</h1>
